@@ -1,0 +1,27 @@
+name: Make Release
+
+on:
+    workflow_dispatch:
+jobs:
+    build-and-release:
+        runs-on: ubuntu-latest
+        steps:
+            - name: "Git checkout"
+              uses: actions/checkout@v3
+            - name: "Create a package"
+              run: cd ~/work/tcconfig-ubuntu-venv && tar -zcvf tc.tar.gz tcconfig-ubuntu-venv
+            - name: "Delete previous release"
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                set -e
+                PREV=$(gh release list -R github.com/rglonek/tcconfig-ubuntu-venv -L 100 |awk '{print $(NF-1)}' |tail -1)
+                echo "Removing $PREV"
+                gh release delete $PREV -R github.com/rglonek/tcconfig-ubuntu-venv --yes --cleanup-tag
+            - name: "Create a release"
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                set -e
+                cd ~/work/tcconfig-ubuntu-venv
+                gh release create -R github.com/rglonek/tcconfig-ubuntu-venv --target master --title "Latest" latest tc.tar.gz
